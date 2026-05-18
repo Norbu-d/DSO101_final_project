@@ -1,6 +1,6 @@
 # TenPhel — Project Progress
 
-**Last Updated:** May 19, 2026 | **Status:** 🟢 MVP Complete & Running
+**Last Updated:** May 19, 2026 | **Status:** 🟢 MVP Complete & Deployed
 **Repo:** `Norbu-d/DSO101_final_project` (main branch) | **Location:** `d:\tenphel\tenphel`
 
 ---
@@ -19,6 +19,9 @@
 | Charts | Recharts 3.8.1 |
 | Icons | Lucide React |
 | Backend/DB | Supabase (PostgreSQL + Auth + RLS) |
+| Containerization | Docker + Docker Compose |
+| CI/CD | GitHub Actions |
+| Hosting | Vercel (frontend) + Docker Hub (image registry) |
 | Package Mgr | npm |
 
 ---
@@ -46,6 +49,13 @@ tenphel/
 │       ├── db.ts                   # 15+ database functions
 │       ├── supabase.ts             # Supabase client + TS types
 │       └── constants.ts            # Categories, formatting utils
+├── .github/
+│   └── workflows/
+│       └── deploy.yml              # GitHub Actions CI/CD pipeline
+├── Dockerfile                      # Multi-stage Docker build
+├── docker-compose.yml              # Local Docker dev setup
+├── .dockerignore                   # Docker build exclusions
+├── next.config.ts                  # Next.js config (standalone output)
 ├── supabase-schema.sql             # DB schema + RLS policies
 └── package.json
 ```
@@ -125,6 +135,22 @@ formatDate(str)     // → "Today" / "Yesterday" / "May 4"
 today()             // → "2026-05-19"
 ```
 
+### Docker (`Dockerfile`, `docker-compose.yml`)
+- Multi-stage Dockerfile: deps → builder → runner (node:20-alpine)
+- `output: "standalone"` enabled in `next.config.ts` for lean production image
+- Supabase env vars injected as build args at image build time
+- Non-root user (`nextjs`) for container security
+- `docker compose up --build` tested and verified locally ✅
+- Image runs at `http://localhost:3000`
+
+### CI/CD Pipeline (`.github/workflows/deploy.yml`)
+- **Job 1 — Lint:** runs `next lint` on every push and PR
+- **Job 2 — Docker:** builds image and pushes to Docker Hub (`username/tenphel:latest` + `username/tenphel:<sha>`) on push to main
+- **Job 3 — Deploy Production:** deploys to Vercel automatically on push to main
+- **Job 4 — Preview Deploy:** deploys preview URL on every PR and posts it as a comment
+- Vercel project linked: `norbu-ds-projects/tenphel`
+- All 7 GitHub secrets configured ✅
+
 ---
 
 ## 5. Issues Fixed
@@ -136,6 +162,8 @@ today()             // → "2026-05-19"
 | Email confirmation blocking auth | Disabled in Supabase dashboard |
 | React hydration errors | Added `suppressHydrationWarning` to inputs |
 | ESLint inline style warnings | Disabled rule in `eslint.config.mjs` |
+| Docker standalone build | Added `output: "standalone"` to `next.config.ts` |
+| Lint script broken | Changed `"lint": "eslint"` → `"lint": "next lint"` in `package.json` |
 
 ---
 
@@ -164,17 +192,24 @@ today()             // → "2026-05-19"
 ```
 PROJECT: TenPhel — Bhutanese student money tracker
 TECH: Next.js 16 + TypeScript + Supabase + Tailwind CSS + React 19
-STATUS: MVP complete — auth, expenses, income, analytics all working
+STATUS: MVP complete — auth, expenses, income, analytics, Docker + CI/CD all working
 LOCATION: d:\tenphel\tenphel
 REPO: Norbu-d/DSO101_final_project (main branch)
 
 KEY FILES:
-- src/lib/db.ts           → all DB functions
-- src/context/AuthContext.tsx → auth state + useAuth()
-- src/app/dashboard/page.tsx → main UI
-- supabase-schema.sql     → DB schema + RLS
+- src/lib/db.ts                    → all DB functions
+- src/context/AuthContext.tsx      → auth state + useAuth()
+- src/app/dashboard/page.tsx       → main UI
+- supabase-schema.sql              → DB schema + RLS
+- Dockerfile                       → multi-stage Docker build
+- .github/workflows/deploy.yml     → GitHub Actions CI/CD pipeline
 
-NEXT WORK: user settings, budgets, analytics charts, or deployment
+DEPLOYMENT:
+- Vercel project: norbu-ds-projects/tenphel
+- Docker Hub: username/tenphel
+- CI/CD: push to main → lint → Docker build → Vercel deploy (fully automated)
+
+NEXT WORK: user settings, budgets, analytics charts
 ```
 
 ### Setup Checklist
@@ -183,8 +218,20 @@ npm install
 # Create .env:
 # NEXT_PUBLIC_SUPABASE_URL=https://[PROJECT].supabase.co
 # NEXT_PUBLIC_SUPABASE_ANON_KEY=[ANON_KEY]
-npm run dev   # → http://localhost:3000
+npm run dev          # → http://localhost:3000 (local dev)
+docker compose up --build  # → http://localhost:3000 (Docker)
 ```
+
+### GitHub Secrets Required
+| Secret | Purpose |
+|--------|---------|
+| `VERCEL_TOKEN` | Vercel deployment auth |
+| `VERCEL_ORG_ID` | `team_KRwfjVI3B10md7KZmg448CyD` |
+| `VERCEL_PROJECT_ID` | `prj_rDNHtuJSSvOuxILpLwZJPa4s0yD6` |
+| `DOCKERHUB_USERNAME` | Docker Hub image push |
+| `DOCKERHUB_TOKEN` | Docker Hub auth |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key |
 
 - [ ] Supabase: email confirmation **OFF**, schema applied, RLS enabled
 - [ ] Verify 6 tables exist: `users, categories, expenses, income_entries, budgets, alerts`
