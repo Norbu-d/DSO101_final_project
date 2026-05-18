@@ -14,7 +14,7 @@ import TransactionRow from '@/components/TransactionRow'
 import { supabase } from '@/lib/supabase'
 import { 
   LogOut, History, Wallet, Bell, TrendingUp, TrendingDown, PieChart, 
-  Home, Settings, Target, Calendar, ArrowUpRight, ArrowDownRight,
+  Home, Calendar, ArrowUpRight, ArrowDownRight,
   CreditCard, Coffee, ShoppingBag, Bus, BookOpen, Zap
 } from 'lucide-react'
 
@@ -47,7 +47,11 @@ export default function DashboardPage() {
   }, [user, loading, router])
 
   useEffect(() => {
-    if (profile) setBalance(profile.current_balance)
+    // Initialize balance from profile when it loads
+    if (profile) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setBalance(profile.current_balance)
+    }
   }, [profile])
 
   const loadData = useCallback(async () => {
@@ -66,6 +70,8 @@ export default function DashboardPage() {
   }, [user])
 
   useEffect(() => {
+    // Load data when user changes
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (user) loadData()
   }, [user, loadData])
 
@@ -373,7 +379,7 @@ export default function DashboardPage() {
 
 // Helper function to get category icon
 function getCategoryIcon(categoryId: string) {
-  const icons: Record<string, any> = {
+  const icons: Record<string, React.ComponentType<{ size: number }>> = {
     food: Coffee,
     transport: Bus,
     entertainment: ShoppingBag,

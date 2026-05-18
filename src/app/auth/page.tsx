@@ -79,7 +79,7 @@ export default function AuthPage() {
   }
 
   const handleBalanceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/[^0-9]/g, '')
+    const value = e.target.value.replace(/[^0-9]/g, '')
     setRegBalance(value)
   }
 
@@ -301,7 +301,7 @@ export default function AuthPage() {
               </div>
 
               <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 13, marginTop: 24 }}>
-                Don't have an account?{' '}
+                Don&apos;t have an account?{' '}
                 <button
                   type="button"
                   onClick={() => { setStep('register'); setError(''); setRegName(''); setRegEmail(''); setRegPassword(''); }}

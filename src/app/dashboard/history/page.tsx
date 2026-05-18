@@ -36,6 +36,8 @@ export default function HistoryPage() {
   }, [user])
 
   useEffect(() => {
+    // Load data when user changes
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (user) loadData()
   }, [user, loadData])
 
