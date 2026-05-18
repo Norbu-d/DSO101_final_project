@@ -1,0 +1,145 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #0f0e0c;
+  --bg-card: #1a1814;
+  --bg-muted: #242018;
+  --border: #2e2a22;
+  --border-light: #3d3830;
+  --text-primary: #f5f0e8;
+  --text-secondary: #a09880;
+  --text-muted: #6b6355;
+  --accent: #e8a020;
+  --accent-hover: #f0b030;
+  --accent-dim: rgba(232, 160, 32, 0.12);
+  --green: #4caf7d;
+  --green-dim: rgba(76, 175, 125, 0.12);
+  --red: #e05a4e;
+  --red-dim: rgba(224, 90, 78, 0.12);
+  --orange: #e87840;
+  --orange-dim: rgba(232, 120, 64, 0.12);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { background: var(--bg); color: var(--text-primary); }
+body {
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text-primary);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 2px; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-up { animation: fadeUp 0.4s ease forwards; }
+.animate-fade-in { animation: fadeIn 0.3s ease forwards; }
+
+.stagger > *:nth-child(1) { animation-delay: 0ms; }
+.stagger > *:nth-child(2) { animation-delay: 60ms; }
+.stagger > *:nth-child(3) { animation-delay: 120ms; }
+.stagger > *:nth-child(4) { animation-delay: 180ms; }
+.stagger > *:nth-child(5) { animation-delay: 240ms; }
+.stagger > *:nth-child(6) { animation-delay: 300ms; }
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.input {
+  background: var(--bg-muted);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  padding: 10px 14px;
+  font-size: 14px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.input:focus { border-color: var(--accent); }
+.input::placeholder { color: var(--text-muted); }
+
+.btn-primary {
+  background: var(--accent);
+  color: #0f0e0c;
+  border: none;
+  border-radius: 8px;
+  padding: 11px 20px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  width: 100%;
+}
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-primary:active { transform: scale(0.98); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.btn-ghost:hover { border-color: var(--border-light); color: var(--text-primary); }
+
+.chip {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-muted);
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+.chip:hover { border-color: var(--accent); color: var(--text-primary); }
+.chip.selected { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+
+.amount-chip {
+  padding: 8px 0;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-muted);
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+  flex: 1;
+}
+.amount-chip:hover { border-color: var(--accent); color: var(--accent); }
+
+.badge-green { background: var(--green-dim); color: var(--green); border-radius: 6px; padding: 2px 8px; font-size: 12px; font-weight: 500; }
+.badge-red { background: var(--red-dim); color: var(--red); border-radius: 6px; padding: 2px 8px; font-size: 12px; font-weight: 500; }
+
+.mobile-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+  display: flex;
+  padding: 8px 0;
+  z-index: 50;
+}
