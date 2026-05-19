@@ -1,0 +1,20 @@
+# Dependencies
+node_modules
+
+# Build output
+.next
+out
+
+# Git
+.git
+.gitignore
+
+# Env files (secrets must never go into the image)
+.env
+.env.*
+!.env.example
+
+# Dev/editor files
+*.md
+.vercel
+.vscode

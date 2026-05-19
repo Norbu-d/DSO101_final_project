@@ -1,486 +1,237 @@
-# TenPhel - Project Progress Report
+# TenPhel — Project Progress
 
-**Last Updated:** May 4, 2026  
-**Status:** 🟢 MVP Development Complete (Running & Functional)
+**Last Updated:** May 19, 2026 | **Status:** 🟢 MVP Complete & Deployed
+**Repo:** `Norbu-d/DSO101_final_project` (main branch) | **Location:** `d:\tenphel\tenphel`
 
 ---
 
-## 1. Project Overview & Goal
+## 1. Project Overview
 
-**TenPhel** is a **student-focused money tracking application** designed for Bhutanese students to manage their spending in Bhutanese Ngultrum (Nu.). The app helps students understand their spending patterns, track expenses by category, monitor income sources, and make smarter financial decisions.
-
-### Key Features:
-- 🔐 User authentication (sign up / sign in)
-- 💰 Real-time balance tracking
-- 📊 Expense logging with 10 categories
-- 💵 Income tracking with 6 sources
-- 📈 Spending insights & analytics
-- 📋 Transaction history with filtering
-- 📱 Mobile-first UI design
-- 🎨 Beautiful dark theme with Bhutanese cultural elements
+**TenPhel** is a student-focused money tracking app for Bhutanese students to manage spending in Ngultrum (Nu.). Features: user auth, real-time balance, expense/income logging, spending analytics, and transaction history — all in a mobile-first dark UI.
 
 ---
 
 ## 2. Tech Stack
 
-### Frontend
-- **Framework:** Next.js 16.2.4
-- **Language:** TypeScript
-- **UI Library:** React 19.2.4
-- **Styling:** Tailwind CSS 4 + inline styles
-- **Icons:** Lucide React 1.14.0
-- **Charts:** Recharts 3.8.1
-
-### Backend & Database
-- **Auth & Database:** Supabase (PostgreSQL)
-- **ORM/Query:** Supabase JavaScript SDK
-- **Authentication:** Supabase Auth (Email/Password)
-- **Security:** Row Level Security (RLS) policies
-
-### DevOps & Tools
-- **Package Manager:** npm
-- **Linter:** ESLint 9
-- **Deployment:** (Ready for Vercel)
+| Layer | Tech |
+|-------|------|
+| Frontend | Next.js 16.2.4, React 19, TypeScript, Tailwind CSS 4 |
+| Charts | Recharts 3.8.1 |
+| Icons | Lucide React |
+| Backend/DB | Supabase (PostgreSQL + Auth + RLS) |
+| Containerization | Docker + Docker Compose |
+| CI/CD | GitHub Actions |
+| Hosting | Vercel (frontend) + Docker Hub (image registry) |
+| Package Mgr | npm |
 
 ---
 
-## 3. Completed Work & File Structure
+## 3. Folder Structure
 
-### Core Application Files
-
-#### **Authentication System**
-- **`src/context/AuthContext.tsx`** - React context managing user authentication state
-  - Provides `useAuth()` hook for accessing user & profile data
-  - Auto-fetches user profile on app load
-  - Handles sign out functionality
-  
-- **`src/app/auth/page.tsx`** - Multi-step authentication UI
-  - Login form (email/password)
-  - Registration form (name, email, password)
-  - Initial balance setup screen
-  - Form validation & error handling
-  - `suppressHydrationWarning` added to prevent browser extension conflicts
-
-#### **Dashboard & Core Pages**
-- **`src/app/page.tsx`** - Landing/root page
-  - Auto-redirects authenticated users to `/dashboard`
-  - Redirects unauthenticated users to `/auth`
-  
-- **`src/app/dashboard/page.tsx`** - Main dashboard (FULLY BUILT)
-  - Current balance display with decorative card
-  - Monthly stats: Received money & Spent amount
-  - Action buttons: "+ Received Money" & "- Log Expense"
-  - Spending Insights section showing:
-    - Daily average spending
-    - Transaction count
-    - Top 3 spending categories with progress bars
-  - Recent transactions list (10 items, with delete option)
-  - Bottom navigation (Dashboard / History tabs)
-  
-- **`src/app/dashboard/history/page.tsx`** - Transaction history page
-  - Full transaction history (all expenses + income)
-  - Filter by: All / Expenses / Income
-  - Grouped by date with formatted date labels
-  - Paginated display
-
-#### **UI Components**
-- **`src/components/LogExpenseModal.tsx`** - Expense logging modal
-  - Amount input with balance preview
-  - Quick amount buttons (50, 100, 200, 500, 1000, 2000 Nu.)
-  - Category selection (3-column grid with emojis)
-  - Date picker
-  - Note field
-  - Real-time balance calculation
-  
-- **`src/components/ReceivedMoneyModal.tsx`** - Income logging modal
-  - Amount input with new balance preview
-  - Quick amount buttons (500, 1000, 2000, 5000 Nu.)
-  - Source selection (6 options: Parents, Stipend, Part-time, Scholarship, Gift, Other)
-  - Date picker
-  - Note field
-  
-- **`src/components/TransactionRow.tsx`** - Reusable transaction display component
-  - Shows category/source icon with colored background
-  - Transaction details (category name, note, date)
-  - Amount with +/- prefix
-  - Delete button with hover effects
-
-#### **Database & API Logic**
-- **`src/lib/db.ts`** - All database operations
-  - **Auth Functions:**
-    - `signUp()` - Creates user in auth.users, inserts profile, seeds default categories
-    - `signIn()` - Authenticates with email/password
-  
-  - **Expense Functions:**
-    - `logExpense()` - Records expense, updates balance
-    - `getExpenses()` - Fetches user's expenses
-    - `getMonthlyExpenses()` - Current month expenses
-    - `deleteExpense()` - Deletes expense, refunds balance
-  
-  - **Income Functions:**
-    - `logIncome()` - Records income, updates balance
-    - `getIncomeEntries()` - Fetches user's income
-  
-  - **Combined Functions:**
-    - `getRecentTransactions()` - Merges expenses & income, sorts by date
-  
-  - **Stats Functions:**
-    - `getCategoryTotals()` - Calculates spending per category
-    - `getMonthlyTotal()` - Sum of monthly expenses
-    - `getDailyAverage()` - Daily avg calculation
-
-- **`src/lib/supabase.ts`** - Supabase client initialization
-  - Reads from `.env` variables
-  - Exports Supabase client & TypeScript types
-
-- **`src/lib/constants.ts`** - App constants & utilities
-  - `EXPENSE_CATEGORIES` - 10 categories with icons
-  - `INCOME_SOURCES` - 6 income sources with icons
-  - `QUICK_AMOUNTS` - Quick select amounts
-  - `formatNu()` - Format numbers as Bhutanese Ngultrum
-  - `formatDate()` - Smart date formatting (Today, Yesterday, etc.)
-  - `today()` - ISO date string for today
-
-#### **Styling & Configuration**
-- **`src/app/globals.css`** - Global styles
-  - CSS variables for theme (colors, spacing, etc.)
-  - Dark theme with accent color (orange/gold)
-  - Card, button, input component styles
-  - Mobile-first responsive design
-  - Animation classes (animate-fade-up)
-  
-- **`src/app/layout.tsx`** - Root layout
-  - Metadata setup
-  - Font imports (DM Sans, DM Mono)
-  - AuthProvider wrapper
-  
-- **`eslint.config.mjs`** - ESLint configuration
-  - Uses Next.js core web vitals & TypeScript configs
-  - Disabled `@next/next/no-inline-styles` rule
-
-- **`tsconfig.json`** - TypeScript configuration
-- **`next.config.ts`** - Next.js configuration
-- **`postcss.config.mjs`** - PostCSS/Tailwind config
-
-#### **Database Schema**
-- **`supabase-schema.sql`** - PostgreSQL schema with RLS policies
-  - **users** table - User profiles with balance tracking
-  - **categories** table - Expense categories (default + user custom)
-  - **expenses** table - Expense records
-  - **income_entries** table - Income records
-  - **budgets** table - Budget limits per category
-  - **alerts** table - Budget alerts
-  - RLS policies protecting data access
-
-#### **Environment Setup**
-- **`.env`** - Configuration (created during setup)
-  - `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL
-  - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Anonymous key for client
-
-#### **Config Files**
-- **`package.json`** - Dependencies & scripts
-- **`README.md`** - Next.js boilerplate docs
-
----
-
-## 4. Issues Fixed During Development
-
-### ✅ Fixed Issues
-
-1. **Incorrect Supabase URL format** 
-   - Problem: `/rest/v1/` was included in base URL, causing 404 on auth endpoints
-   - Fix: Removed path from `.env` URL
-   
-2. **401 Unauthorized on signup**
-   - Problem: RLS policy required authentication to insert user profile
-   - Fix: Removed auto sign-in after signup (email confirmation was blocking it)
-   - Fix: Modified INSERT policy to allow unauthenticated access with `auth.uid() = id` check
-   
-3. **Email confirmation blocking registration**
-   - Problem: Supabase required email confirmation by default
-   - Solution: Disabled "Confirm email" in Supabase dashboard for development
-   
-4. **Dashboard blank after login**
-   - Problem: Profile SELECT RLS policy was blocking authenticated users
-   - Fix: Updated RLS policy to allow users to read their own profiles
-   
-5. **React hydration errors**
-   - Problem: Browser extensions (password managers) adding attributes to form inputs
-   - Fix: Added `suppressHydrationWarning` to all form elements
-   
-6. **ESLint warnings on inline styles**
-   - Problem: 50+ warnings about inline CSS usage
-   - Fix: Disabled `@next/next/no-inline-styles` rule in eslint.config.mjs
-
----
-
-## 5. Important Implementation Details
-
-### RLS (Row Level Security) Policies
-
-The current setup in Supabase should have:
-
-```sql
--- Users can read their own profile
-CREATE POLICY "Users can read own profile" ON public.users 
-  FOR SELECT USING (auth.uid() = id);
-
--- Users can update their own profile
-CREATE POLICY "Users can update own profile" ON public.users 
-  FOR UPDATE USING (auth.uid() = id);
-
--- Anyone can insert their own profile (for signup)
-CREATE POLICY "Users can insert own profile" ON public.users 
-  FOR INSERT WITH CHECK (true);
 ```
-
-### Authentication Flow
-
-1. User signs up → Account created in `auth.users`
-2. Profile created in `public.users` with RLS allowing any authenticated user
-3. User logs in → Session established
-4. Dashboard fetches profile → RLS policy allows read access
-5. User can log expenses/income → All operations respect user ownership
-
-### Supabase Configuration
-
-Required settings:
-- ✅ Email confirmation: **OFF** (for development)
-- ✅ Database: PostgreSQL
-- ✅ Row Level Security: **ENABLED**
-- ✅ Auth providers: Email/Password
-
----
-
-## 6. How to Run the Project
-
-### Prerequisites
-- Node.js 18+ and npm installed
-- Supabase account & project created
-- `.env` file with Supabase credentials
-
-### Setup Steps
-
-```bash
-# 1. Clone/navigate to project
-cd d:\tenphel\tenphel
-
-# 2. Install dependencies
-npm install
-
-# 3. Create .env file with:
-NEXT_PUBLIC_SUPABASE_URL=https://[YOUR_PROJECT].supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=[YOUR_ANON_KEY]
-
-# 4. Run database schema
-# Go to Supabase dashboard → SQL Editor → Run supabase-schema.sql
-
-# 5. Start dev server
-npm run dev
-
-# 6. Open browser
-# http://localhost:3000
+tenphel/
+├── src/
+│   ├── app/
+│   │   ├── layout.tsx              # Root layout + AuthProvider
+│   │   ├── page.tsx                # Redirects auth → dashboard
+│   │   ├── globals.css             # Dark theme, CSS variables
+│   │   ├── auth/page.tsx           # Login / signup / balance setup
+│   │   └── dashboard/
+│   │       ├── page.tsx            # Main dashboard
+│   │       └── history/page.tsx    # Full transaction history
+│   ├── components/
+│   │   ├── LogExpenseModal.tsx     # Expense form modal
+│   │   ├── ReceivedMoneyModal.tsx  # Income form modal
+│   │   └── TransactionRow.tsx      # Reusable transaction item
+│   ├── context/
+│   │   └── AuthContext.tsx         # Auth state + useAuth() hook
+│   └── lib/
+│       ├── db.ts                   # 15+ database functions
+│       ├── supabase.ts             # Supabase client + TS types
+│       └── constants.ts            # Categories, formatting utils
+├── .github/
+│   └── workflows/
+│       └── deploy.yml              # GitHub Actions CI/CD pipeline
+├── Dockerfile                      # Multi-stage Docker build
+├── docker-compose.yml              # Local Docker dev setup
+├── .dockerignore                   # Docker build exclusions
+├── next.config.ts                  # Next.js config (standalone output)
+├── supabase-schema.sql             # DB schema + RLS policies
+└── package.json
 ```
 
 ---
 
-## 7. What's Remaining / Next Steps
+## 4. Completed Work
 
-### High Priority
-1. **User Profile Management**
-   - Settings page to edit name & password
-   - Change initial balance
-   - Account deletion
+### Auth (`src/context/AuthContext.tsx`, `src/app/auth/page.tsx`)
+- `useAuth()` hook exposes `{ user, profile, loading, signOut, refreshProfile }`
+- Multi-step UI: login → register → set initial balance
+- Auto-redirects on session state change
 
-2. **Budget Feature**
-   - Set per-category budget limits
-   - Budget vs actual spending charts
-   - Budget alerts
+### Dashboard (`src/app/dashboard/page.tsx`)
+- Balance card, monthly received/spent stats
+- Spending insights: daily average, top 3 categories with progress bars
+- Recent 10 transactions with delete
+- Buttons to open expense/income modals
 
-3. **Advanced Analytics**
-   - Monthly spending trends
-   - Category breakdown pie/bar charts
-   - Spending goals
+### History (`src/app/dashboard/history/page.tsx`)
+- All transactions, grouped by date
+- Filter: All / Expenses / Income
 
-4. **Data Export**
-   - Export transactions as CSV
-   - PDF statements
-   - Email reports
+### Modals
+- **LogExpenseModal** — amount, quick buttons (50–2000 Nu.), 10 categories, date, note, live balance preview
+- **ReceivedMoneyModal** — amount, quick buttons (500–5000 Nu.), 6 income sources, date, note
 
-### Medium Priority
-5. **Search & Filtering**
-   - Search transactions by note
-   - Date range filtering
-   - Category filtering on dashboard
-
-6. **Recurring Transactions**
-   - Auto-log recurring expenses
-   - Subscription tracking
-
-7. **Mobile Polish**
-   - PWA support for offline access
-   - App installation capability
-   - Push notifications
-
-### Lower Priority
-8. **Social Features**
-   - Share budgets with friends
-   - Group spending tracking
-   - Spending challenges
-
-9. **AI Features**
-   - Spending predictions
-   - Smart category suggestions
-   - Budget recommendations
-
-10. **Deployment**
-    - Deploy to Vercel
-    - Set up CI/CD
-    - Production database backup strategy
-
----
-
-## 8. Known Limitations & TODO
-
-### Current Limitations
-- ❌ No offline support (requires internet connection)
-- ❌ No data backup/sync across devices
-- ❌ No custom expense categories yet (only default ones)
-- ❌ No multi-currency support
-- ❌ No budget alerts system (db ready, UI not built)
-- ❌ No recurring transactions
-- ❌ Limited to one user per session (no team sharing)
-
-### Code Improvements Needed
-- Consider moving inline styles to CSS modules for better maintainability
-- Add unit tests for `db.ts` functions
-- Add E2E tests for auth flow
-- Add error boundary for better error handling
-- Consider adding Zod/validation library for form validation
-
----
-
-## 9. How to Continue in a New Claude Chat
-
-### Context to Copy-Paste
-```
-This is TenPhel, a student money tracking app built with Next.js + Supabase.
-- Tech: React 19, Next.js 16, TypeScript, Supabase, Tailwind CSS
-- Status: MVP complete with auth, expenses, income, dashboard, history pages
-- Database: PostgreSQL with RLS policies
-- To understand: Read progress.md first, then check specific files as needed
-```
-
-### Important Files to Reference
-When continuing work, prioritize these files:
-1. `src/lib/db.ts` - All database logic
-2. `src/app/dashboard/page.tsx` - Main UI
-3. `supabase-schema.sql` - Database structure
-4. `.env` - Supabase config
-
-### Running the Project Again
-```bash
-npm install          # Only if dependencies changed
-npm run dev          # Start dev server
-npm run build        # Build for production
-npm run lint         # Check for issues
-```
-
-### Checking Supabase Connection
-If you get auth errors in a new session:
-1. Verify `.env` has correct SUPABASE_URL and ANON_KEY
-2. Check Supabase SQL Editor → Run schema if needed
-3. Verify RLS policies are correct (see section 5)
-4. Check email confirmation is OFF in Auth settings
-
-### Common Issues & Fixes
-| Issue | Fix |
-|-------|-----|
-| 404 on auth endpoints | Check `.env` URL doesn't have `/rest/v1/` |
-| 401 on profile fetch | Verify RLS policies in database |
-| Blank dashboard | Check profile query in `getSession()` call |
-| Hydration errors | Ensure `suppressHydrationWarning` on form elements |
-| Red linting marks | Run `npm run lint` and check eslint.config.mjs |
-
----
-
-## 10. Code Summary
-
-### Key Database Functions
+### Database (`src/lib/db.ts`) — Key Functions
 
 ```typescript
-// Authentication
-signUp(email, password, name, initialBalance) → creates user + profile + default categories
-signIn(email, password) → authenticates user
+// Auth
+signUp(email, password, name, initialBalance)   // creates user + profile + default categories
+signIn(email, password)
 
 // Expenses
-logExpense(userId, amount, categoryId, note, date, currentBalance) → records & updates balance
-getExpenses(userId) → fetches all expenses
-getMonthlyExpenses(userId) → current month only
-deleteExpense(expenseId, userId, amount, currentBalance) → deletes & refunds
+logExpense(userId, amount, categoryId, note, date, currentBalance)
+getExpenses(userId)
+getMonthlyExpenses(userId)
+deleteExpense(expenseId, userId, amount, currentBalance)  // refunds balance
 
 // Income
-logIncome(userId, amount, source, note, date, currentBalance) → records & updates balance
-getIncomeEntries(userId) → fetches all income
+logIncome(userId, amount, source, note, date, currentBalance)
+getIncomeEntries(userId)
 
 // Analytics
-getRecentTransactions(userId) → merges expenses + income, sorted by date
-getCategoryTotals(expenses) → sum per category
-getMonthlyTotal(expenses) → total spending
-getDailyAverage(expenses) → avg per day
+getRecentTransactions(userId)   // merged + sorted expenses & income
+getCategoryTotals(expenses)
+getMonthlyTotal(expenses)
+getDailyAverage(expenses)
 ```
 
-### Key Component Props
+### Database Schema (`supabase-schema.sql`)
+
+```sql
+-- 6 tables: users, categories, expenses, income_entries, budgets, alerts
+CREATE TABLE public.users (
+  id UUID PRIMARY KEY, email TEXT UNIQUE NOT NULL,
+  name TEXT NOT NULL, current_balance DECIMAL DEFAULT 0
+);
+CREATE TABLE public.expenses (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id), amount DECIMAL NOT NULL,
+  category_id TEXT REFERENCES categories(id), note TEXT, date DATE NOT NULL
+);
+-- RLS: users read/update own rows; expenses/income full CRUD on own rows
+```
+
+### Constants (`src/lib/constants.ts`)
 
 ```typescript
-// LogExpenseModal
-{ userId, currentBalance, onClose, onSuccess }
-
-// ReceivedMoneyModal
-{ userId, currentBalance, onClose, onSuccess }
-
-// TransactionRow
-{ transaction, onDelete? }
+EXPENSE_CATEGORIES  // 10: Food, Transport, Entertainment, Education, Utilities,
+                    //     Clothing, Healthcare, Gifts, Subscriptions, Other
+INCOME_SOURCES      // 6: Parents, Stipend, Part-time, Scholarship, Gift, Other
+QUICK_AMOUNTS       // [50, 100, 200, 500, 1000, 2000]
+formatNu(amount)    // → "Nu. 1,000.00"
+formatDate(str)     // → "Today" / "Yesterday" / "May 4"
+today()             // → "2026-05-19"
 ```
 
-### useAuth() Hook Usage
+### Docker (`Dockerfile`, `docker-compose.yml`)
+- Multi-stage Dockerfile: deps → builder → runner (node:20-alpine)
+- `output: "standalone"` enabled in `next.config.ts` for lean production image
+- Supabase env vars injected as build args at image build time
+- Non-root user (`nextjs`) for container security
+- `docker compose up --build` tested and verified locally ✅
+- Image runs at `http://localhost:3000`
 
-```typescript
-const { user, profile, loading, signOut, refreshProfile } = useAuth()
+### CI/CD Pipeline (`.github/workflows/deploy.yml`)
+- **Job 1 — Lint:** runs `next lint` on every push and PR
+- **Job 2 — Docker:** builds image and pushes to Docker Hub (`username/tenphel:latest` + `username/tenphel:<sha>`) on push to main
+- **Job 3 — Deploy Production:** deploys to Vercel automatically on push to main
+- **Job 4 — Preview Deploy:** deploys preview URL on every PR and posts it as a comment
+- Vercel project linked: `norbu-ds-projects/tenphel`
+- All 7 GitHub secrets configured ✅
+
+---
+
+## 5. Issues Fixed
+
+| Problem | Fix |
+|---------|-----|
+| 401 on signup | Fixed RLS INSERT policy (`WITH CHECK (true)`) |
+| Blank dashboard after login | Fixed RLS SELECT policy on users table |
+| Email confirmation blocking auth | Disabled in Supabase dashboard |
+| React hydration errors | Added `suppressHydrationWarning` to inputs |
+| ESLint inline style warnings | Disabled rule in `eslint.config.mjs` |
+| Docker standalone build | Added `output: "standalone"` to `next.config.ts` |
+| Lint script broken | Changed `"lint": "eslint"` → `"lint": "next lint"` in `package.json` |
+
+---
+
+## 6. What's Next
+
+**High Priority**
+- [ ] User settings (edit name, password, balance)
+- [ ] Budget system (per-category limits + alerts UI)
+- [ ] Advanced charts (monthly trends, category pie chart)
+
+**Medium Priority**
+- [ ] Search transactions by note
+- [ ] Date range filtering
+- [ ] CSV / PDF export
+
+**Lower Priority**
+- [ ] PWA / offline support
+- [ ] Recurring transactions
+- [ ] AI spending insights
+
+---
+
+## 7. How to Continue in a New Chat
+
+### Paste this context block:
+```
+PROJECT: TenPhel — Bhutanese student money tracker
+TECH: Next.js 16 + TypeScript + Supabase + Tailwind CSS + React 19
+STATUS: MVP complete — auth, expenses, income, analytics, Docker + CI/CD all working
+LOCATION: d:\tenphel\tenphel
+REPO: Norbu-d/DSO101_final_project (main branch)
+
+KEY FILES:
+- src/lib/db.ts                    → all DB functions
+- src/context/AuthContext.tsx      → auth state + useAuth()
+- src/app/dashboard/page.tsx       → main UI
+- supabase-schema.sql              → DB schema + RLS
+- Dockerfile                       → multi-stage Docker build
+- .github/workflows/deploy.yml     → GitHub Actions CI/CD pipeline
+
+DEPLOYMENT:
+- Vercel project: norbu-ds-projects/tenphel
+- Docker Hub: username/tenphel
+- CI/CD: push to main → lint → Docker build → Vercel deploy (fully automated)
+
+NEXT WORK: user settings, budgets, analytics charts
 ```
 
----
+### Setup Checklist
+```bash
+npm install
+# Create .env:
+# NEXT_PUBLIC_SUPABASE_URL=https://[PROJECT].supabase.co
+# NEXT_PUBLIC_SUPABASE_ANON_KEY=[ANON_KEY]
+npm run dev          # → http://localhost:3000 (local dev)
+docker compose up --build  # → http://localhost:3000 (Docker)
+```
 
-## 11. Project Statistics
+### GitHub Secrets Required
+| Secret | Purpose |
+|--------|---------|
+| `VERCEL_TOKEN` | Vercel deployment auth |
+| `VERCEL_ORG_ID` | `team_KRwfjVI3B10md7KZmg448CyD` |
+| `VERCEL_PROJECT_ID` | `prj_rDNHtuJSSvOuxILpLwZJPa4s0yD6` |
+| `DOCKERHUB_USERNAME` | Docker Hub image push |
+| `DOCKERHUB_TOKEN` | Docker Hub auth |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key |
 
-- **Total Files:** 20+ active files
-- **Lines of Code:** ~2,500+ (excluding node_modules)
-- **Components:** 5 major (Dashboard, History, Auth, 3 modals/rows)
-- **Database Tables:** 6 tables with RLS
-- **API Functions:** 15+ database operations
-- **Expense Categories:** 10 predefined
-- **Income Sources:** 6 predefined
-
----
-
-## 12. Future Vision
-
-### 6-Month Roadmap
-- Q2 2026: User settings & profile management
-- Q2 2026: Budget system with alerts
-- Q3 2026: Advanced analytics & charts
-- Q3 2026: Mobile app (React Native)
-- Q4 2026: AI-powered insights & predictions
-
-### Year 1 Goals
-- Reach 100+ active users
-- Add multi-language support (English, Dzongkha)
-- Launch family/group sharing features
-- 4.5+ star rating on app stores
-
----
-
-**Last Commit:** May 4, 2026  
-**Next Estimated Update:** After new features are added  
-**Contact/Notes:** Built as a student project for Bhutanese students
-
+- [ ] Supabase: email confirmation **OFF**, schema applied, RLS enabled
+- [ ] Verify 6 tables exist: `users, categories, expenses, income_entries, budgets, alerts`

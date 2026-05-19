@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { INCOME_SOURCES, today, formatNu } from '@/lib/constants'
 import { logIncome } from '@/lib/db'
 import { X } from 'lucide-react'
@@ -19,9 +19,35 @@ export default function ReceivedMoneyModal({ userId, currentBalance, onClose, on
   const [date, setDate] = useState(today())
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  
+  const amountInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    // Focus on amount input when modal opens (works on mobile)
+    setTimeout(() => {
+      amountInputRef.current?.focus()
+    }, 100)
+  }, [])
 
   const parsedAmount = parseFloat(amount) || 0
   const afterBalance = currentBalance + parsedAmount
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Remove any non-numeric characters except decimal point
+    let value = e.target.value.replace(/[^0-9.]/g, '')
+    // Ensure only one decimal point
+    const parts = value.split('.')
+    if (parts.length > 2) value = parts[0] + '.' + parts.slice(1).join('')
+    // Limit to 2 decimal places
+    if (parts[1] && parts[1].length > 2) value = parts[0] + '.' + parts[1].slice(0, 2)
+    setAmount(value)
+  }
+
+  const handleQuickAmount = (value: number) => {
+    setAmount(String(value))
+    // Keep focus on input field
+    amountInputRef.current?.focus()
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -41,152 +67,203 @@ export default function ReceivedMoneyModal({ userId, currentBalance, onClose, on
   }
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 100,
-      display: 'flex', alignItems: 'flex-end',
-      background: 'rgba(0,0,0,0.6)',
-      backdropFilter: 'blur(4px)',
-    }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-
-      <div style={{
-        width: '100%',
-        maxWidth: 480,
-        margin: '0 auto',
-        background: 'var(--bg-card)',
-        borderRadius: '16px 16px 0 0',
-        border: '1px solid var(--border)',
-        borderBottom: 'none',
-        padding: '20px 20px 32px',
-        maxHeight: '85vh',
-        overflowY: 'auto',
-      }} className="animate-fade-up">
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        display: 'flex', alignItems: 'flex-end',
+        background: 'rgba(0,0,0,0.6)',
+        WebkitTapHighlightColor: 'transparent',
+      }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div
+        style={{
+          width: '100%',
+          maxWidth: 520,
+          margin: '0 auto',
+          background: 'var(--bg-card)',
+          borderRadius: '24px 24px 0 0',
+          padding: '20px 20px 36px',
+          maxHeight: '90vh',
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
+        }}
+        className="animate-fade-up"
+      >
+        {/* Handle bar */}
+        <div style={{ width: 40, height: 4, borderRadius: 2, background: 'var(--border)', margin: '0 auto 20px' }} />
 
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24 }}>
           <div>
-            <h2 style={{ fontSize: 17, fontWeight: 600 }}>Received Money</h2>
-            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-              Balance: <span style={{ color: 'var(--text-secondary)' }}>{formatNu(currentBalance)}</span>
+            <h2 style={{ fontSize: 20, fontWeight: 600, color: 'var(--text-primary)' }}>Received Money</h2>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
+              Current: <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{formatNu(currentBalance)}</span>
             </p>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4 }}>
-            <X size={20} />
+          <button
+            onClick={onClose}
+            style={{
+              width: 36, height: 36, borderRadius: '50%',
+              background: 'var(--bg-muted)', border: '1px solid var(--border)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', color: 'var(--text-muted)',
+            }}
+          >
+            <X size={18} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit}>
-          {/* Amount */}
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>Amount received</label>
+
+          {/* Amount input */}
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ fontSize: 13, color: 'var(--text-secondary)', display: 'block', marginBottom: 8, fontWeight: 500 }}>
+              Amount Received (Nu.)
+            </label>
             <div style={{ position: 'relative' }}>
-              <span style={{
-                position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
-                color: 'var(--green)', fontWeight: 600, fontSize: 15,
-              }}>Nu.</span>
               <input
+                ref={amountInputRef}
                 className="input"
-                type="number"
-                placeholder="0"
+                type="text"
+                inputMode="decimal"
+                pattern="[0-9]*"
+                placeholder="0.00"
                 value={amount}
-                onChange={e => setAmount(e.target.value)}
-                style={{ paddingLeft: 48, fontSize: 22, fontWeight: 600, fontFamily: 'DM Mono, monospace' }}
-                autoFocus
+                onChange={handleAmountChange}
+                style={{ 
+                  fontSize: 28, 
+                  fontWeight: 700, 
+                  fontFamily: 'DM Mono, monospace',
+                  padding: '14px 16px',
+                  textAlign: 'center',
+                  letterSpacing: '1px'
+                }}
+                suppressHydrationWarning
               />
             </div>
 
+            {/* Balance preview */}
             {parsedAmount > 0 && (
               <div style={{
-                marginTop: 8,
-                padding: '8px 12px',
-                borderRadius: 8,
+                marginTop: 12,
+                padding: '10px 14px',
+                borderRadius: 12,
                 background: 'var(--green-dim)',
-                border: '1px solid rgba(76,175,125,0.3)',
+                border: '1px solid var(--green-dim)',
               }}>
-                <p style={{ fontSize: 12, color: 'var(--green)' }}>
+                <p style={{ fontSize: 13, color: 'var(--green)', fontWeight: 500 }}>
                   New balance: {formatNu(afterBalance)}
                 </p>
               </div>
             )}
 
             {/* Quick amounts */}
-            <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+            <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
               {[500, 1000, 2000, 5000].map(a => (
                 <button
                   key={a}
                   type="button"
                   className="amount-chip"
-                  onClick={() => setAmount(String(a))}
-                  style={amount === String(a) ? { borderColor: 'var(--green)', color: 'var(--green)' } : {}}
+                  onClick={() => handleQuickAmount(a)}
+                  style={{
+                    flex: '1 0 auto',
+                    minWidth: '80px',
+                    padding: '12px 8px',
+                    fontSize: 14,
+                    fontWeight: 500,
+                    background: amount === String(a) ? 'var(--green-dim)' : 'var(--bg-muted)',
+                    borderColor: amount === String(a) ? 'var(--green)' : 'var(--border)',
+                    color: amount === String(a) ? 'var(--green)' : 'var(--text-secondary)',
+                  }}
                 >
-                  {a >= 1000 ? `${a/1000}k` : a}
+                  Nu. {a >= 1000 ? `${a / 1000}k` : a}
                 </button>
               ))}
             </div>
           </div>
 
           {/* Source */}
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 8 }}>Source</label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 6 }}>
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ fontSize: 13, color: 'var(--text-secondary)', display: 'block', marginBottom: 10, fontWeight: 500 }}>
+              Source
+            </label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
               {INCOME_SOURCES.map(src => (
                 <button
                   key={src.id}
                   type="button"
-                  className={`chip ${source === src.id ? 'selected' : ''}`}
                   onClick={() => setSource(src.id)}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px',
-                    ...(source === src.id ? {
-                      background: 'var(--green-dim)',
-                      borderColor: 'var(--green)',
-                      color: 'var(--green)',
-                    } : {}),
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '14px 12px', borderRadius: 12, cursor: 'pointer',
+                    border: `1.5px solid ${source === src.id ? 'var(--green)' : 'var(--border)'}`,
+                    background: source === src.id ? 'var(--green-dim)' : 'var(--bg-muted)',
+                    color: source === src.id ? 'var(--green)' : 'var(--text-secondary)',
+                    transition: 'all 0.15s',
                   }}
                 >
-                  <span style={{ fontSize: 16 }}>{src.icon}</span>
-                  <span style={{ fontSize: 12 }}>{src.name}</span>
+                  <span style={{ fontSize: 20 }}>{src.icon}</span>
+                  <span style={{ fontSize: 13, fontWeight: source === src.id ? 600 : 500 }}>{src.name}</span>
                 </button>
               ))}
             </div>
           </div>
 
           {/* Date */}
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>Date</label>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ fontSize: 13, color: 'var(--text-secondary)', display: 'block', marginBottom: 8, fontWeight: 500 }}>
+              Date
+            </label>
             <input
               className="input"
               type="date"
               value={date}
               onChange={e => setDate(e.target.value)}
               max={today()}
+              style={{ padding: '12px 14px', fontSize: 15 }}
+              suppressHydrationWarning
             />
           </div>
 
           {/* Note */}
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>
-              Note <span style={{ color: 'var(--text-muted)' }}>(optional)</span>
+          <div style={{ marginBottom: 24 }}>
+            <label style={{ fontSize: 13, color: 'var(--text-secondary)', display: 'block', marginBottom: 8, fontWeight: 500 }}>
+              Note <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(optional)</span>
             </label>
             <input
               className="input"
               type="text"
-              placeholder="e.g. from my dad"
+              inputMode="text"
+              placeholder="e.g., from parents"
               value={note}
               onChange={e => setNote(e.target.value)}
+              style={{ padding: '12px 14px', fontSize: 14 }}
             />
           </div>
 
           {error && (
-            <p style={{ color: 'var(--red)', fontSize: 13, marginBottom: 12, textAlign: 'center' }}>{error}</p>
+            <div style={{
+              padding: '12px 14px', borderRadius: 12,
+              background: 'var(--red-dim)', border: '1px solid var(--red-dim)',
+              marginBottom: 16,
+            }}>
+              <p style={{ color: 'var(--red)', fontSize: 13 }}>{error}</p>
+            </div>
           )}
 
           <button
-            className="btn-primary"
             type="submit"
             disabled={loading}
-            style={{ background: 'var(--green)', fontSize: 15 }}
+            style={{
+              width: '100%', padding: '16px 0', borderRadius: 14,
+              background: loading ? 'var(--green-dim)' : 'var(--green)',
+              color: '#fff', fontWeight: 600, fontSize: 16,
+              border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
+              transition: 'all 0.2s',
+            }}
           >
-            {loading ? 'Adding...' : 'ADD TO BALANCE +'}
+            {loading ? 'Adding...' : 'Add to Balance'}
           </button>
         </form>
       </div>

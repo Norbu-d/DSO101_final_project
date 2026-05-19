@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import { EXPENSE_CATEGORIES, INCOME_SOURCES } from './constants'
+import { EXPENSE_CATEGORIES } from './constants'
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
