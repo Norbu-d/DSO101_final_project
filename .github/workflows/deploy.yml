@@ -1,4 +1,4 @@
-name: 🚀 TenPhel CI/CD Pipeline
+name: TenPhel CI/CD Pipeline
 
 on:
   push:
@@ -7,20 +7,74 @@ on:
     branches: [main]
 
 jobs:
-  # ──────────────────────────────────────────
-  # JOB 1: Lint
-  # ──────────────────────────────────────────
-  lint:
-    name: 🔍 Lint
+
+  # ═══════════════════════════════════════════════════════════════
+  # STAGE 1 — Setup Environment
+  # ═══════════════════════════════════════════════════════════════
+
+  setup-env:
+    name: Setup Environment
     runs-on: ubuntu-latest
-    continue-on-error: true
-
+    outputs:
+      is_main_push: ${{ steps.vars.outputs.is_main_push }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Set pipeline variables
+        id: vars
+        run: |
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "is_main_push=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_main_push=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Pipeline info
+        run: |
+          echo "Event:     ${{ github.event_name }}"
+          echo "Branch:    ${{ github.ref_name }}"
+          echo "Commit:    ${{ github.sha }}"
+          echo "Main push: ${{ steps.vars.outputs.is_main_push }}"
+
+  # ═══════════════════════════════════════════════════════════════
+  # STAGE 2 — Secret Scanning & Prevention
+  # Note: private repos require a GITLEAKS_LICENSE secret.
+  #       Public repos work without one.
+  # ═══════════════════════════════════════════════════════════════
+
+  secret-scan:
+    name: Secret Scanning & Prevention
+    runs-on: ubuntu-latest
+    needs: setup-env
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan for hardcoded secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+
+  # ═══════════════════════════════════════════════════════════════
+  # STAGE 3 — Install & Test
+  # ═══════════════════════════════════════════════════════════════
+
+  install-test:
+    name: Install & Test
+    runs-on: ubuntu-latest
+    needs: secret-scan
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "npm"
@@ -31,57 +85,18 @@ jobs:
       - name: Run lint
         run: npm run lint
 
-  # ──────────────────────────────────────────
-  # JOB 2: Build & Push Docker Image
-  # ──────────────────────────────────────────
-  docker:
-    name: 🐳 Build & Push Docker Image
+  # ═══════════════════════════════════════════════════════════════
+  # STAGE 4 — Build Next.js Application
+  # ═══════════════════════════════════════════════════════════════
+
+  build-app:
+    name: Build Next.js Application
     runs-on: ubuntu-latest
-    needs: lint
-    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
-
+    needs: install-test
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/tenphel:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/tenphel:${{ github.sha }}
-          build-args: |
-            NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  # ──────────────────────────────────────────
-  # JOB 3: Deploy to Vercel (Production)
-  # ──────────────────────────────────────────
-  deploy-production:
-    name: 🌐 Deploy to Vercel
-    runs-on: ubuntu-latest
-    needs: docker
-    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "npm"
@@ -89,16 +104,189 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Vercel CLI
-        run: npm install --global vercel@latest
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
-      - name: Pull Vercel environment info
+  # ═══════════════════════════════════════════════════════════════
+  # STAGE 5 — SonarCloud Code Quality
+  # ═══════════════════════════════════════════════════════════════
+
+  sonar:
+    name: SonarCloud Code Quality
+    runs-on: ubuntu-latest
+    needs: build-app
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  # ═══════════════════════════════════════════════════════════════
+  # STAGE 6 — Trivy Filesystem Scan
+  # ═══════════════════════════════════════════════════════════════
+
+  trivy-fs:
+    name: Trivy Filesystem Scan
+    runs-on: ubuntu-latest
+    needs: sonar
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scan filesystem for vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          format: "table"
+          output: "trivy-fs-results.txt"
+          exit-code: "0"
+          ignore-unfixed: true
+          severity: "CRITICAL,HIGH"
+
+      - name: Upload filesystem scan report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-fs-report
+          path: trivy-fs-results.txt
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # ═══════════════════════════════════════════════════════════════
+  # STAGE 7 — Build Docker Image
+  # ═══════════════════════════════════════════════════════════════
+
+  docker-build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: trivy-fs
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        run: |
+          docker build \
+            --build-arg NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }} \
+            --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }} \
+            -t tenphel:${{ github.sha }} .
+
+      - name: Save image as artifact
+        run: docker save tenphel:${{ github.sha }} | gzip > /tmp/tenphel-image.tar.gz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: /tmp/tenphel-image.tar.gz
+          retention-days: 1
+
+  # ═══════════════════════════════════════════════════════════════
+  # STAGE 8 — Trivy Docker Image Scan
+  # ═══════════════════════════════════════════════════════════════
+
+  trivy-docker:
+    name: Trivy Docker Image Scan
+    runs-on: ubuntu-latest
+    needs: docker-build
+    continue-on-error: true
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+          path: /tmp
+
+      - name: Load Docker image
+        run: docker load < /tmp/tenphel-image.tar.gz
+
+      - name: Scan image for vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "image"
+          image-ref: "tenphel:${{ github.sha }}"
+          format: "table"
+          output: "trivy-docker-results.txt"
+          exit-code: "0"
+          ignore-unfixed: true
+          severity: "CRITICAL,HIGH"
+
+      - name: Upload image scan report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-docker-report
+          path: trivy-docker-results.txt
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # ═══════════════════════════════════════════════════════════════
+  # STAGE 9 — Push Docker Image  (push to main only)
+  # ═══════════════════════════════════════════════════════════════
+
+  docker-push:
+    name: Push Docker Image
+    runs-on: ubuntu-latest
+    needs: trivy-docker
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+          path: /tmp
+
+      - name: Load Docker image
+        run: docker load < /tmp/tenphel-image.tar.gz
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Tag and push to Docker Hub
+        run: |
+          docker tag tenphel:${{ github.sha }} ${{ secrets.DOCKERHUB_USERNAME }}/tenphel:latest
+          docker tag tenphel:${{ github.sha }} ${{ secrets.DOCKERHUB_USERNAME }}/tenphel:${{ github.sha }}
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/tenphel:latest
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/tenphel:${{ github.sha }}
+
+  # ═══════════════════════════════════════════════════════════════
+  # STAGE 10 — Deploy to Vercel
+  # ═══════════════════════════════════════════════════════════════
+
+  deploy-production:
+    name: Deploy to Vercel (Production)
+    runs-on: ubuntu-latest
+    needs: docker-push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - run: npm ci
+
+      - run: npm install --global vercel@latest
+
+      - name: Pull Vercel environment
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
-      - name: Build for Vercel
+      - name: Build
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -106,44 +294,38 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
-      - name: Deploy to Vercel production
+      - name: Deploy
         run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
-  # ──────────────────────────────────────────
-  # JOB 4: Preview Deploy (Pull Requests)
-  # ──────────────────────────────────────────
   deploy-preview:
-    name: 🔎 Preview Deploy
+    name: Deploy to Vercel (Preview)
     runs-on: ubuntu-latest
-    needs: lint
+    needs: trivy-docker
     if: github.event_name == 'pull_request'
-
+    outputs:
+      preview_url: ${{ steps.deploy.outputs.preview_url }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "npm"
 
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
 
-      - name: Install Vercel CLI
-        run: npm install --global vercel@latest
+      - run: npm install --global vercel@latest
 
-      - name: Pull Vercel environment info
+      - name: Pull Vercel environment
         run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
-      - name: Build for preview
+      - name: Build
         run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -151,7 +333,7 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
-      - name: Deploy preview
+      - name: Deploy and capture URL
         id: deploy
         run: |
           url=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
@@ -168,5 +350,99 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '## 🚀 Preview Ready!\n\n**URL:** ${{ steps.deploy.outputs.preview_url }}\n\nCommit: `' + context.sha.substring(0, 7) + '`'
+              body: '## Preview Ready\n\n**URL:** ${{ steps.deploy.outputs.preview_url }}\n\nCommit: `' + context.sha.substring(0, 7) + '`'
             })
+
+  # ═══════════════════════════════════════════════════════════════
+  # STAGE 11 — OWASP ZAP Dynamic Scan
+  #   PR  → scans the Vercel preview URL
+  #   main → scans the production URL (set PRODUCTION_URL secret)
+  # ═══════════════════════════════════════════════════════════════
+
+  zap:
+    name: OWASP ZAP Dynamic Scan
+    runs-on: ubuntu-latest
+    needs: [deploy-production, deploy-preview]
+    if: |
+      always() &&
+      (needs.deploy-production.result == 'success' || needs.deploy-preview.result == 'success')
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve target URL
+        id: target
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "url=${{ needs.deploy-preview.outputs.preview_url }}" >> $GITHUB_OUTPUT
+          else
+            echo "url=${{ secrets.PRODUCTION_URL }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: ${{ steps.target.outputs.url }}
+          fail_action: false
+
+      - name: Upload ZAP report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-security-report
+          path: report_html.html
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # ═══════════════════════════════════════════════════════════════
+  # STAGE 12 — Pipeline Status
+  # ═══════════════════════════════════════════════════════════════
+
+  pipeline-status:
+    name: Pipeline Status
+    runs-on: ubuntu-latest
+    needs:
+      - setup-env
+      - secret-scan
+      - install-test
+      - build-app
+      - sonar
+      - trivy-fs
+      - docker-build
+      - trivy-docker
+      - docker-push
+      - deploy-production
+      - deploy-preview
+      - zap
+    if: always()
+    steps:
+      - name: Pipeline Summary
+        run: |
+          echo "============================================"
+          echo "         TENPHEL CI/CD SUMMARY             "
+          echo "============================================"
+          printf "\n%-30s %s\n" "Stage" "Result"
+          printf "%-30s %s\n"   "─────" "──────"
+          printf "%-30s %s\n" "Setup Environment"       "${{ needs.setup-env.result }}"
+          printf "%-30s %s\n" "Secret Scanning"         "${{ needs.secret-scan.result }}"
+          printf "%-30s %s\n" "Install & Test"          "${{ needs.install-test.result }}"
+          printf "%-30s %s\n" "Build Application"       "${{ needs.build-app.result }}"
+          printf "%-30s %s\n" "SonarCloud Quality"      "${{ needs.sonar.result }}"
+          printf "%-30s %s\n" "Trivy Filesystem Scan"   "${{ needs.trivy-fs.result }}"
+          printf "%-30s %s\n" "Build Docker Image"      "${{ needs.docker-build.result }}"
+          printf "%-30s %s\n" "Trivy Docker Scan"       "${{ needs.trivy-docker.result }}"
+          printf "%-30s %s\n" "Push Docker Image"       "${{ needs.docker-push.result }}"
+          printf "%-30s %s\n" "Deploy Production"       "${{ needs.deploy-production.result }}"
+          printf "%-30s %s\n" "Deploy Preview"          "${{ needs.deploy-preview.result }}"
+          printf "%-30s %s\n" "OWASP ZAP Scan"          "${{ needs.zap.result }}"
+          echo ""
+          echo "============================================"
+
+          if [[ "${{ needs.install-test.result }}"  == "failure" || \
+                "${{ needs.build-app.result }}"      == "failure" || \
+                "${{ needs.docker-build.result }}"   == "failure" ]]; then
+            echo "STATUS: FAILED — a critical stage did not pass"
+            exit 1
+          fi
+
+          echo "STATUS: PASSED"
