@@ -9,7 +9,9 @@ type Step = 'login' | 'register' | 'balance'
 export default function AuthPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [step, setStep] = useState<Step>('login')
+  const [step, setStep] = useState<Step>(() =>
+    searchParams.get('step') === 'register' ? 'register' : 'login'
+  )
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -22,13 +24,6 @@ export default function AuthPage() {
   const [regBalance, setRegBalance] = useState('')
 
   const balanceInputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    const queryStep = searchParams.get('step')
-    if (queryStep === 'register') {
-      setStep('register')
-    }
-  }, [searchParams])
 
   useEffect(() => {
     if (step === 'balance' && balanceInputRef.current) {
