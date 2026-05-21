@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn, signUp } from '@/lib/db'
 
 type Step = 'login' | 'register' | 'balance'
 
-export default function AuthPage() {
+function AuthPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [step, setStep] = useState<Step>(() =>
@@ -609,5 +609,13 @@ export default function AuthPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+export default function AuthPage() {
+  return (
+    <Suspense>
+      <AuthPageContent />
+    </Suspense>
   )
 }
