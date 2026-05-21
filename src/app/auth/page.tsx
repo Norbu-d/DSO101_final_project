@@ -1,14 +1,17 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useRef, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn, signUp } from '@/lib/db'
 
 type Step = 'login' | 'register' | 'balance'
 
-export default function AuthPage() {
+function AuthPageContent() {
   const router = useRouter()
-  const [step, setStep] = useState<Step>('login')
+  const searchParams = useSearchParams()
+  const [step, setStep] = useState<Step>(() =>
+    searchParams.get('step') === 'register' ? 'register' : 'login'
+  )
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -606,5 +609,13 @@ export default function AuthPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+export default function AuthPage() {
+  return (
+    <Suspense>
+      <AuthPageContent />
+    </Suspense>
   )
 }
