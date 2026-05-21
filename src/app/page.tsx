@@ -60,18 +60,7 @@ export default function Home() {
         justifyContent: 'space-between',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 50,
-            height: 50,
-            borderRadius: 12,
-            background: 'linear-gradient(135deg, #7c6ff7 0%, #5b4ee0 100%)',
-            boxShadow: '0 8px 20px rgba(124,111,247,0.2)',
-          }}>
-            <span style={{ fontSize: 28, color: '#fff', fontWeight: 700 }}>₿</span>
-          </div>
+          <img src="/image.png" alt="TenPhel" style={{ width: 80, height: 80, objectFit: 'contain' }} />
           <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text-primary)' }}>TenPhel</h1>
         </div>
         <button

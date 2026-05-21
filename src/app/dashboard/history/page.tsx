@@ -65,7 +65,7 @@ export default function HistoryPage() {
       {/* Sidebar - Desktop only */}
       <aside className="sidebar">
         <div className="sidebar-header">
-          <div className="logo-icon">₿</div>
+          <img src="/image.png" alt="TenPhel" style={{ width: 60, height: 60, objectFit: 'contain' }} />
           <span className="logo-text">TenPhel</span>
         </div>
         <nav className="sidebar-nav">
@@ -122,8 +122,9 @@ export default function HistoryPage() {
                 </p>
               )}
             </div>
-            <button onClick={() => router.back()} className="btn-secondary" style={{ padding: '8px 20px' }}>
-              <ArrowLeft size={16} /> Back
+            <button onClick={() => router.back()} className="btn-secondary" style={{ padding: '8px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+              <ArrowLeft size={16} />
+              Back
             </button>
           </div>
 
