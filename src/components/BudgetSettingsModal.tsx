@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { EXPENSE_CATEGORIES, formatNu } from "@/lib/constants";
+import { useState, useEffect, useCallback } from "react";
+import { EXPENSE_CATEGORIES } from "@/lib/constants";
 import { getBudgets, setBudget } from "@/lib/db";
 import { X } from "lucide-react";
 
@@ -22,11 +22,7 @@ export default function BudgetSettingsModal({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  useEffect(() => {
-    loadBudgets();
-  }, []);
-
-  const loadBudgets = async () => {
+  const loadBudgets = useCallback(async () => {
     try {
       const existingBudgets = await getBudgets(userId);
       const budgetsMap: Record<string, number> = {};
@@ -39,7 +35,11 @@ export default function BudgetSettingsModal({
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    loadBudgets();
+  }, [loadBudgets]);
 
   const handleBudgetChange = (categoryId: string, value: string) => {
     const amount = parseFloat(value) || 0;

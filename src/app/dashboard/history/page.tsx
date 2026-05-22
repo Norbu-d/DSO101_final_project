@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 import { getRecentTransactions } from '@/lib/db'
@@ -65,7 +66,7 @@ export default function HistoryPage() {
       {/* Sidebar - Desktop only */}
       <aside className="sidebar">
         <div className="sidebar-header">
-          <img src="/image.png" alt="TenPhel" style={{ width: 60, height: 60, objectFit: 'contain' }} />
+          <Image src="/image.png" alt="TenPhel" width={60} height={60} style={{ objectFit: 'contain' }} />
           <span className="logo-text">TenPhel</span>
         </div>
         <nav className="sidebar-nav">

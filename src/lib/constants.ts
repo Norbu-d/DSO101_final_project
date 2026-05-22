@@ -1,4 +1,4 @@
-export const EXPENSE_CATEGORIES = [
+  export const EXPENSE_CATEGORIES = [
   { id: "food", name: "Food & Drinks", icon: "🍚" },
   { id: "transport", name: "Transport", icon: "🚌" },
   { id: "stationery", name: "Stationery", icon: "📚" },

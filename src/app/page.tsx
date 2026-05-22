@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 
@@ -60,7 +61,7 @@ export default function Home() {
         justifyContent: 'space-between',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <img src="/image.png" alt="TenPhel" style={{ width: 80, height: 80, objectFit: 'contain' }} />
+          <Image src="/image.png" alt="TenPhel" width={80} height={80} style={{ objectFit: 'contain' }} />
           <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text-primary)' }}>TenPhel</h1>
         </div>
         <button

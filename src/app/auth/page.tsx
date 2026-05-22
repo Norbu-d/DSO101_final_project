@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, Suspense } from 'react'
+import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn, signUp } from '@/lib/db'
 
@@ -124,7 +125,7 @@ function AuthPageContent() {
             borderRadius: 20,
             marginBottom: 16,
           }}>
-            <img src="/image.png" alt="TenPhel" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            <Image src="/image.png" alt="TenPhel" width={150} height={150} style={{ objectFit: 'contain' }} />
           </div>
           <h1 style={{ 
             fontSize: 32, 

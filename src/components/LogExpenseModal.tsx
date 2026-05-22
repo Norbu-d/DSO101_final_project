@@ -30,7 +30,12 @@ export default function LogExpenseModal({
   const [date, setDate] = useState(today());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [budgetAlert, setBudgetAlert] = useState<any>(null);
+  const [budgetAlert, setBudgetAlert] = useState<{
+    triggered: boolean;
+    percentage: number;
+    categorySpending: number;
+    limitAmount: number;
+  } | null>(null);
   const [showBudgetWarning, setShowBudgetWarning] = useState(false);
 
   const amountInputRef = useRef<HTMLInputElement>(null);
@@ -88,7 +93,7 @@ export default function LogExpenseModal({
         setShowBudgetWarning(true);
         return;
       }
-    } catch (err) {
+    } catch {
       // If budget check fails, continue anyway (no budgets set)
     }
 

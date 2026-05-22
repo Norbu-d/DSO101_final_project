@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -51,6 +52,14 @@ type Transaction = {
   created_at?: string;
 };
 
+type BudgetAlert = {
+  categoryId: string;
+  triggered: boolean;
+  percentage: number;
+  categorySpending: number;
+  limitAmount: number;
+};
+
 const BAR_COLORS = ["#7c6ff7", "#e05a30", "#28a05f", "#f5a623", "#5bc0eb"];
 
 export default function DashboardPage() {
@@ -65,7 +74,7 @@ export default function DashboardPage() {
   const [dataLoading, setDataLoading] = useState(true);
   const [showExpense, setShowExpense] = useState(false);
   const [showIncome, setShowIncome] = useState(false);
-  const [budgetAlerts, setBudgetAlerts] = useState<any[]>([]);
+  const [budgetAlerts, setBudgetAlerts] = useState<BudgetAlert[]>([]);
   const [showBudgetSettings, setShowBudgetSettings] = useState(false);
   const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(
     new Set(),
@@ -100,7 +109,7 @@ export default function DashboardPage() {
         setBudgetAlerts(alerts);
         // Clear dismissed alerts when data reloads
         setDismissedAlerts(new Set());
-      } catch (err) {
+      } catch {
         // No budgets set, skip alerts
       }
     } finally {
@@ -205,7 +214,7 @@ export default function DashboardPage() {
       {/* Sidebar */}
       <aside className="sidebar">
         <div className="sidebar-header">
-          <img src="/image.png" alt="TenPhel" style={{ width: 60, height: 60, objectFit: 'contain' }} />
+          <Image src="/image.png" alt="TenPhel" width={60} height={60} style={{ objectFit: 'contain' }} />
           <span className="logo-text">TenPhel</span>
         </div>
 
@@ -399,16 +408,16 @@ export default function DashboardPage() {
                       >
                         You've spent{" "}
                         {budgetAlerts.filter(
-                          (a: any) => !dismissedAlerts.has(a.categoryId),
+                        (a: BudgetAlert) => !dismissedAlerts.has(a.categoryId),
                         ).length === 1
                           ? "a lot in one category"
                           : "a lot across multiple categories"}{" "}
                         -{" "}
                         {budgetAlerts
                           .filter(
-                            (a: any) => !dismissedAlerts.has(a.categoryId),
+                            (a: BudgetAlert) => !dismissedAlerts.has(a.categoryId),
                           )
-                          .some((a: any) => a.percentage >= 100)
+                          .some((a: BudgetAlert) => a.percentage >= 100)
                           ? "you've exceeded your budget"
                           : "you're approaching your budget limit"}
                         .
@@ -419,8 +428,8 @@ export default function DashboardPage() {
                     style={{ display: "flex", flexDirection: "column", gap: 8 }}
                   >
                     {budgetAlerts
-                      .filter((a: any) => !dismissedAlerts.has(a.categoryId))
-                      .map((alert: any) => (
+                      .filter((a: BudgetAlert) => !dismissedAlerts.has(a.categoryId))
+                      .map((alert: BudgetAlert) => (
                         <div
                           key={alert.categoryId}
                           style={{
