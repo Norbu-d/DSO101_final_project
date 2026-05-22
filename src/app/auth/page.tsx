@@ -119,14 +119,12 @@ function AuthPageContent() {
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: 70,
-            height: 70,
+            width: 150,
+            height: 150,
             borderRadius: 20,
-            background: 'linear-gradient(135deg, #7c6ff7 0%, #5b4ee0 100%)',
             marginBottom: 16,
-            boxShadow: '0 10px 30px rgba(124,111,247,0.3)',
           }}>
-            <span style={{ fontSize: 32, color: '#fff', fontWeight: 700 }}>₿</span>
+            <img src="/image.png" alt="TenPhel" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           <h1 style={{ 
             fontSize: 32, 
