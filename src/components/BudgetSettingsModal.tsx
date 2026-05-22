@@ -38,6 +38,7 @@ export default function BudgetSettingsModal({
   }, [userId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadBudgets();
   }, [loadBudgets]);
 
@@ -133,7 +134,8 @@ export default function BudgetSettingsModal({
             <p
               style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}
             >
-              Set monthly limits for each category. You'll get an alert at 80%.
+              Set monthly limits for each category. You&apos;ll get an alert at
+              80%.
             </p>
             <p
               style={{

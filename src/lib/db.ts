@@ -236,7 +236,7 @@ export async function setBudget(
   categoryId: string,
   amountLimit: number,
 ) {
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from("budgets")
     .select("id")
     .eq("user_id", userId)

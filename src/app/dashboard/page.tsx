@@ -214,7 +214,13 @@ export default function DashboardPage() {
       {/* Sidebar */}
       <aside className="sidebar">
         <div className="sidebar-header">
-          <Image src="/image.png" alt="TenPhel" width={60} height={60} style={{ objectFit: 'contain' }} />
+          <Image
+            src="/image.png"
+            alt="TenPhel"
+            width={60}
+            height={60}
+            style={{ objectFit: "contain" }}
+          />
           <span className="logo-text">TenPhel</span>
         </div>
 
@@ -286,7 +292,14 @@ export default function DashboardPage() {
             </div>
             <div className="header-stats">
               <div className="stat-badge">
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 4,
+                  }}
+                >
                   <Calendar size={14} />
                   <span>This Month</span>
                 </div>
@@ -360,7 +373,7 @@ export default function DashboardPage() {
 
               {/* Budget Alerts */}
               {budgetAlerts.filter(
-                (a: any) => !dismissedAlerts.has(a.categoryId),
+                (a: BudgetAlert) => !dismissedAlerts.has(a.categoryId),
               ).length > 0 && (
                 <div
                   style={{
@@ -406,16 +419,18 @@ export default function DashboardPage() {
                           lineHeight: 1.4,
                         }}
                       >
-                        You've spent{" "}
+                        You&apos;ve spent{" "}
                         {budgetAlerts.filter(
-                        (a: BudgetAlert) => !dismissedAlerts.has(a.categoryId),
+                          (a: BudgetAlert) =>
+                            !dismissedAlerts.has(a.categoryId),
                         ).length === 1
                           ? "a lot in one category"
                           : "a lot across multiple categories"}{" "}
                         -{" "}
                         {budgetAlerts
                           .filter(
-                            (a: BudgetAlert) => !dismissedAlerts.has(a.categoryId),
+                            (a: BudgetAlert) =>
+                              !dismissedAlerts.has(a.categoryId),
                           )
                           .some((a: BudgetAlert) => a.percentage >= 100)
                           ? "you've exceeded your budget"
@@ -428,7 +443,9 @@ export default function DashboardPage() {
                     style={{ display: "flex", flexDirection: "column", gap: 8 }}
                   >
                     {budgetAlerts
-                      .filter((a: BudgetAlert) => !dismissedAlerts.has(a.categoryId))
+                      .filter(
+                        (a: BudgetAlert) => !dismissedAlerts.has(a.categoryId),
+                      )
                       .map((alert: BudgetAlert) => (
                         <div
                           key={alert.categoryId}
