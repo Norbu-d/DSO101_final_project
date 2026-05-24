@@ -6,8 +6,12 @@ on:
   pull_request:
     branches: [main]
 
-jobs:
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
 
+jobs:
   # ═══════════════════════════════════════════════════════════════
   # STAGE 1 — Setup Environment
   # ═══════════════════════════════════════════════════════════════
@@ -61,7 +65,6 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
 
   # ═══════════════════════════════════════════════════════════════
   # STAGE 3 — Install & Test
