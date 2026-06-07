@@ -178,6 +178,36 @@ export async function getIncomeEntries(userId: string, limit = 20) {
   return data || [];
 }
 
+export async function getTotalReceived(userId: string) {
+  try {
+    const { data: userProfile, error: userError } = await supabase
+      .from("users")
+      .select("current_balance")
+      .eq("id", userId)
+      .maybeSingle();
+
+    const { data: incomeEntries, error: incomeError } = await supabase
+      .from("income_entries")
+      .select("amount")
+      .eq("user_id", userId);
+
+    if (userError || incomeError) throw userError || incomeError;
+
+    const profileBalance = userProfile?.current_balance || 0;
+    const totalIncome =
+      incomeEntries?.reduce(
+        (sum: number, entry: { amount: number }) =>
+          sum + parseFloat(entry.amount.toString()),
+        0,
+      ) || 0;
+
+    return profileBalance + totalIncome;
+  } catch (err) {
+    console.error("Error fetching total received:", err);
+    return 0;
+  }
+}
+
 // ─── Combined transactions ────────────────────────────────────────────────────
 
 export async function getRecentTransactions(userId: string) {

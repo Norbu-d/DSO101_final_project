@@ -12,6 +12,8 @@ import {
   getMonthlyTotal,
   getDailyAverage,
   getUserBudgetAlerts,
+  getBudgets,
+  getTotalReceived,
 } from "@/lib/db";
 import { EXPENSE_CATEGORIES, formatNu, getCategoryName } from "@/lib/constants";
 import LogExpenseModal from "@/components/LogExpenseModal";
@@ -79,6 +81,10 @@ export default function DashboardPage() {
   const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(
     new Set(),
   );
+  const [budgets, setBudgets] = useState<
+    Array<{ category_id: string; amount_limit: number }>
+  >([]);
+  const [totalReceived, setTotalReceived] = useState(0);
 
   useEffect(() => {
     if (!loading && !user) router.push("/auth");
@@ -102,6 +108,22 @@ export default function DashboardPage() {
       ]);
       setTransactions(txns as Transaction[]);
       setMonthlyExpenses(monthly);
+
+      // Load total received amount
+      try {
+        const received = await getTotalReceived(user.id);
+        setTotalReceived(received);
+      } catch {
+        setTotalReceived(0);
+      }
+
+      // Load budgets
+      try {
+        const userBudgets = await getBudgets(user.id);
+        setBudgets(userBudgets);
+      } catch {
+        // No budgets set, skip
+      }
 
       // Load budget alerts
       try {
@@ -164,20 +186,8 @@ export default function DashboardPage() {
   const categoryTotals = getCategoryTotals(monthlyExpenses);
   const monthlyTotal = getMonthlyTotal(monthlyExpenses);
   const dailyAvg = getDailyAverage(monthlyExpenses);
-  const monthlyReceived = transactions
-    .filter((t) => {
-      if (t.type !== "income") return false;
-      const d = new Date(t.date),
-        now = new Date();
-      return (
-        d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
-      );
-    })
-    .reduce((s, t) => s + t.amount, 0);
-
-  const savings = monthlyReceived - monthlyTotal;
-  const savingsRate =
-    monthlyReceived > 0 ? (savings / monthlyReceived) * 100 : 0;
+  const savings = totalReceived - monthlyTotal;
+  const savingsRate = totalReceived > 0 ? (savings / totalReceived) * 100 : 0;
 
   if (loading)
     return (
@@ -219,7 +229,7 @@ export default function DashboardPage() {
             alt="TenPhel"
             width={60}
             height={60}
-            style={{ objectFit: "contain" }}
+            style={{ objectFit: "contain", width: "auto" }}
           />
           <span className="logo-text">TenPhel</span>
         </div>
@@ -322,7 +332,7 @@ export default function DashboardPage() {
                       <div>
                         <p className="stat-label">Received</p>
                         <p className="stat-value">
-                          {formatNu(monthlyReceived)}
+                          {formatNu(totalReceived)}
                         </p>
                       </div>
                     </div>
@@ -536,6 +546,101 @@ export default function DashboardPage() {
                   </div>
                 </div>
               )}
+
+              {/* Budget Limits Card */}
+              <div className="insights-card">
+                <div className="card-header">
+                  <div className="card-title">
+                    <CreditCard size={18} />
+                    <h3>Budget Limits</h3>
+                  </div>
+                  <button
+                    onClick={() => setShowBudgetSettings(true)}
+                    style={{
+                      padding: "6px 12px",
+                      borderRadius: 8,
+                      background: "var(--accent-dim)",
+                      border: "1px solid var(--accent-dim)",
+                      color: "var(--accent)",
+                      fontSize: 11,
+                      fontWeight: 500,
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "var(--accent)";
+                      e.currentTarget.style.color = "#fff";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "var(--accent-dim)";
+                      e.currentTarget.style.color = "var(--accent)";
+                    }}
+                  >
+                    Set Budgets
+                  </button>
+                </div>
+
+                {budgets.length > 0 ? (
+                  <div className="categories-section">
+                    {budgets.map((budget) => {
+                      const cat = EXPENSE_CATEGORIES.find(
+                        (c) => c.id === budget.category_id,
+                      );
+                      const categorySpending =
+                        categoryTotals.find((c) => c.id === budget.category_id)
+                          ?.total || 0;
+                      const percentage =
+                        budget.amount_limit > 0
+                          ? (categorySpending / budget.amount_limit) * 100
+                          : 0;
+                      const CategoryIcon = getCategoryIcon(budget.category_id);
+                      return (
+                        <div key={budget.category_id} className="category-item">
+                          <div className="category-info">
+                            <div className="category-name">
+                              <CategoryIcon size={14} />
+                              <span>{cat?.name || budget.category_id}</span>
+                            </div>
+                            <span className="category-amount">
+                              {formatNu(categorySpending)} /{" "}
+                              {formatNu(budget.amount_limit)}
+                            </span>
+                          </div>
+                          <div className="progress-bar">
+                            <div
+                              className="progress-fill"
+                              style={{
+                                width: `${Math.min(percentage, 100)}%`,
+                                background:
+                                  percentage >= 100
+                                    ? "var(--red)"
+                                    : percentage >= 75
+                                      ? "#f5a623"
+                                      : "var(--green)",
+                              }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      padding: "32px 16px",
+                      textAlign: "center",
+                      color: "var(--text-muted)",
+                    }}
+                  >
+                    <p style={{ fontSize: 14, marginBottom: 8 }}>
+                      No budgets set yet
+                    </p>
+                    <p style={{ fontSize: 12 }}>
+                      Create budgets to track your spending by category
+                    </p>
+                  </div>
+                )}
+              </div>
 
               {/* Spending Insights */}
               {monthlyExpenses.length > 0 && (

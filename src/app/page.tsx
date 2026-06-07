@@ -102,7 +102,7 @@ export default function Home() {
             alt="TenPhel"
             width={80}
             height={80}
-            style={{ objectFit: "contain" }}
+            style={{ objectFit: "contain", width: "auto" }}
           />
           <h1
             style={{
