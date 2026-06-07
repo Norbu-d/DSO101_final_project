@@ -114,3 +114,58 @@ alter table public.alerts enable row level security;
 create policy "Users can manage own alerts"
   on public.alerts for all
   using (auth.uid() = user_id);
+
+-- ─── Savings Goals ────────────────────────────────────────────────────────────
+create table public.savings_goals (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references public.users(id) on delete cascade not null,
+  name text not null,
+  target_amount numeric(12, 2) not null check (target_amount > 0),
+  saved_amount numeric(12, 2) not null default 0 check (saved_amount >= 0),
+  deadline date,
+  created_at timestamptz not null default now()
+);
+
+alter table public.savings_goals enable row level security;
+
+create policy "Users can manage own savings goals"
+  on public.savings_goals for all
+  using (auth.uid() = user_id);
+
+create index savings_goals_user_id_idx on public.savings_goals(user_id);
+
+-- ─── Bill Splits ──────────────────────────────────────────────────────────────
+create table public.bill_splits (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references public.users(id) on delete cascade not null,
+  title text not null,
+  total_amount numeric(12, 2) not null check (total_amount > 0),
+  created_at timestamptz not null default now()
+);
+
+alter table public.bill_splits enable row level security;
+
+create policy "Users can manage own bill splits"
+  on public.bill_splits for all
+  using (auth.uid() = user_id);
+
+create index bill_splits_user_id_idx on public.bill_splits(user_id);
+
+create table public.bill_split_participants (
+  id uuid default gen_random_uuid() primary key,
+  split_id uuid references public.bill_splits(id) on delete cascade not null,
+  name text not null,
+  share_amount numeric(12, 2) not null check (share_amount >= 0),
+  is_paid boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+alter table public.bill_split_participants enable row level security;
+
+create policy "Users can manage own split participants"
+  on public.bill_split_participants for all
+  using (
+    split_id in (
+      select id from public.bill_splits where user_id = auth.uid()
+    )
+  );

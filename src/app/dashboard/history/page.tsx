@@ -77,7 +77,7 @@ export default function HistoryPage() {
             alt="TenPhel"
             width={60}
             height={60}
-            style={{ objectFit: "contain", width: "auto" }}
+            style={{ objectFit: "contain", width: "auto", height: "auto" }}
           />
           <span className="logo-text">TenPhel</span>
         </div>

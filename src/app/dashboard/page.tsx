@@ -14,11 +14,14 @@ import {
   getUserBudgetAlerts,
   getBudgets,
   getTotalReceived,
+  getSavingsGoals,
 } from "@/lib/db";
 import { EXPENSE_CATEGORIES, formatNu, getCategoryName } from "@/lib/constants";
 import LogExpenseModal from "@/components/LogExpenseModal";
 import ReceivedMoneyModal from "@/components/ReceivedMoneyModal";
 import BudgetSettingsModal from "@/components/BudgetSettingsModal";
+import SavingsGoalModal from "@/components/SavingsGoalModal";
+import BillSplitModal from "@/components/BillSplitModal";
 import TransactionRow from "@/components/TransactionRow";
 import { supabase } from "@/lib/supabase";
 import {
@@ -41,6 +44,8 @@ import {
   Zap,
   AlertCircle,
   X,
+  Target,
+  Users,
 } from "lucide-react";
 
 type Transaction = {
@@ -60,6 +65,14 @@ type BudgetAlert = {
   percentage: number;
   categorySpending: number;
   limitAmount: number;
+};
+
+type SavingsGoal = {
+  id: string;
+  name: string;
+  target_amount: number;
+  saved_amount: number;
+  deadline?: string | null;
 };
 
 const BAR_COLORS = ["#7c6ff7", "#e05a30", "#28a05f", "#f5a623", "#5bc0eb"];
@@ -85,6 +98,9 @@ export default function DashboardPage() {
     Array<{ category_id: string; amount_limit: number }>
   >([]);
   const [totalReceived, setTotalReceived] = useState(0);
+  const [showSavingsGoal, setShowSavingsGoal] = useState(false);
+  const [showBillSplit, setShowBillSplit] = useState(false);
+  const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>([]);
 
   useEffect(() => {
     if (!loading && !user) router.push("/auth");
@@ -115,6 +131,14 @@ export default function DashboardPage() {
         setTotalReceived(received);
       } catch {
         setTotalReceived(0);
+      }
+
+      // Load savings goals
+      try {
+        const goals = await getSavingsGoals(user.id);
+        setSavingsGoals(goals as SavingsGoal[]);
+      } catch {
+        // Table may not exist yet
       }
 
       // Load budgets
@@ -229,7 +253,7 @@ export default function DashboardPage() {
             alt="TenPhel"
             width={60}
             height={60}
-            style={{ objectFit: "contain", width: "auto" }}
+            style={{ objectFit: "contain", width: "auto", height: "auto" }}
           />
           <span className="logo-text">TenPhel</span>
         </div>
@@ -248,6 +272,20 @@ export default function DashboardPage() {
           >
             <History size={18} />
             <span>History</span>
+          </button>
+          <button
+            onClick={() => setShowSavingsGoal(true)}
+            className="nav-item"
+          >
+            <Target size={18} />
+            <span>Savings Goals</span>
+          </button>
+          <button
+            onClick={() => setShowBillSplit(true)}
+            className="nav-item"
+          >
+            <Users size={18} />
+            <span>Split Bill</span>
           </button>
         </nav>
 
@@ -378,6 +416,70 @@ export default function DashboardPage() {
                 >
                   <ArrowDownRight size={18} />
                   <span>Add Expense</span>
+                </button>
+              </div>
+
+              {/* Secondary Action Buttons */}
+              <div style={{ display: "flex", gap: 12 }}>
+                <button
+                  onClick={() => setShowSavingsGoal(true)}
+                  style={{
+                    flex: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                    padding: "11px 16px",
+                    borderRadius: 14,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    border: "1px solid var(--accent-dim)",
+                    background: "var(--accent-dim)",
+                    color: "var(--accent)",
+                    transition: "all 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "var(--accent)";
+                    e.currentTarget.style.color = "#fff";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "var(--accent-dim)";
+                    e.currentTarget.style.color = "var(--accent)";
+                  }}
+                >
+                  <Target size={16} />
+                  <span>Goals</span>
+                </button>
+                <button
+                  onClick={() => setShowBillSplit(true)}
+                  style={{
+                    flex: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                    padding: "11px 16px",
+                    borderRadius: 14,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    border: "1px solid var(--yellow-dim)",
+                    background: "var(--yellow-dim)",
+                    color: "var(--yellow)",
+                    transition: "all 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "var(--yellow)";
+                    e.currentTarget.style.color = "#fff";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "var(--yellow-dim)";
+                    e.currentTarget.style.color = "var(--yellow)";
+                  }}
+                >
+                  <Users size={16} />
+                  <span>Split Bill</span>
                 </button>
               </div>
 
@@ -546,6 +648,117 @@ export default function DashboardPage() {
                   </div>
                 </div>
               )}
+
+              {/* Savings Goals Card */}
+              <div className="insights-card">
+                <div className="card-header">
+                  <div className="card-title">
+                    <Target size={18} style={{ color: "var(--accent)" }} />
+                    <h3>Savings Goals</h3>
+                  </div>
+                  <button
+                    onClick={() => setShowSavingsGoal(true)}
+                    style={{
+                      padding: "6px 12px",
+                      borderRadius: 8,
+                      background: "var(--accent-dim)",
+                      border: "1px solid var(--accent-dim)",
+                      color: "var(--accent)",
+                      fontSize: 11,
+                      fontWeight: 500,
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "var(--accent)";
+                      e.currentTarget.style.color = "#fff";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "var(--accent-dim)";
+                      e.currentTarget.style.color = "var(--accent)";
+                    }}
+                  >
+                    Manage
+                  </button>
+                </div>
+                {savingsGoals.length > 0 ? (
+                  <div className="categories-section">
+                    {savingsGoals.slice(0, 3).map((goal) => {
+                      const pct =
+                        goal.target_amount > 0
+                          ? Math.min(
+                              (goal.saved_amount / goal.target_amount) * 100,
+                              100,
+                            )
+                          : 0;
+                      const isComplete = pct >= 100;
+                      return (
+                        <div key={goal.id} className="category-item">
+                          <div className="category-info">
+                            <div className="category-name">
+                              <span>{goal.name}</span>
+                              {isComplete && (
+                                <span style={{ fontSize: 12 }}>🎉</span>
+                              )}
+                            </div>
+                            <span
+                              className="category-amount"
+                              style={{
+                                color: isComplete
+                                  ? "var(--green)"
+                                  : "var(--text-secondary)",
+                              }}
+                            >
+                              {formatNu(goal.saved_amount)} /{" "}
+                              {formatNu(goal.target_amount)}
+                            </span>
+                          </div>
+                          <div className="progress-bar">
+                            <div
+                              className="progress-fill"
+                              style={{
+                                width: `${pct}%`,
+                                background: isComplete
+                                  ? "var(--green)"
+                                  : pct >= 75
+                                    ? "#f5a623"
+                                    : "var(--accent)",
+                              }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {savingsGoals.length > 3 && (
+                      <p
+                        style={{
+                          fontSize: 12,
+                          color: "var(--text-muted)",
+                          textAlign: "center",
+                          marginTop: 8,
+                        }}
+                      >
+                        +{savingsGoals.length - 3} more goals
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      padding: "28px 16px",
+                      textAlign: "center",
+                      color: "var(--text-muted)",
+                    }}
+                  >
+                    <p style={{ fontSize: 14, marginBottom: 6 }}>
+                      No savings goals yet
+                    </p>
+                    <p style={{ fontSize: 12 }}>
+                      Set a goal to foster financial growth
+                    </p>
+                  </div>
+                )}
+              </div>
 
               {/* Budget Limits Card */}
               <div className="insights-card">
@@ -806,6 +1019,20 @@ export default function DashboardPage() {
             <History size={20} />
             <span>History</span>
           </button>
+          <button
+            onClick={() => setShowSavingsGoal(true)}
+            className="mobile-nav-item"
+          >
+            <Target size={20} />
+            <span>Goals</span>
+          </button>
+          <button
+            onClick={() => setShowBillSplit(true)}
+            className="mobile-nav-item"
+          >
+            <Users size={20} />
+            <span>Split</span>
+          </button>
         </nav>
       </main>
 
@@ -831,6 +1058,24 @@ export default function DashboardPage() {
           userId={user.id}
           onClose={() => setShowBudgetSettings(false)}
           onSuccess={loadData}
+        />
+      )}
+      {showSavingsGoal && (
+        <SavingsGoalModal
+          userId={user.id}
+          currentBalance={balance}
+          onBalanceChange={(newBalance) => setBalance(newBalance)}
+          onClose={() => {
+            setShowSavingsGoal(false);
+            loadData();
+            refreshProfile();
+          }}
+        />
+      )}
+      {showBillSplit && (
+        <BillSplitModal
+          userId={user.id}
+          onClose={() => setShowBillSplit(false)}
         />
       )}
 

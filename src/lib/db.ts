@@ -336,6 +336,148 @@ export async function checkBudgetAlert(
   };
 }
 
+// ─── Savings Goals ────────────────────────────────────────────────────────────
+
+export async function getSavingsGoals(userId: string) {
+  const { data, error } = await supabase
+    .from("savings_goals")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function createSavingsGoal(
+  userId: string,
+  name: string,
+  targetAmount: number,
+  deadline?: string,
+) {
+  const { data, error } = await supabase
+    .from("savings_goals")
+    .insert({
+      user_id: userId,
+      name,
+      target_amount: targetAmount,
+      saved_amount: 0,
+      deadline: deadline || null,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function contributeToSavingsGoal(
+  userId: string,
+  goalId: string,
+  contribution: number,
+  currentSaved: number,
+  targetAmount: number,
+  currentBalance: number,
+) {
+  if (contribution > currentBalance) throw new Error("Insufficient balance");
+
+  const newSaved = Math.min(currentSaved + contribution, targetAmount);
+  const newBalance = currentBalance - contribution;
+
+  const { error: goalError } = await supabase
+    .from("savings_goals")
+    .update({ saved_amount: newSaved })
+    .eq("id", goalId);
+  if (goalError) throw goalError;
+
+  const { error: balanceError } = await supabase
+    .from("users")
+    .update({ current_balance: newBalance })
+    .eq("id", userId);
+  if (balanceError) throw balanceError;
+
+  return { newSaved, newBalance };
+}
+
+export async function deleteSavingsGoal(goalId: string) {
+  const { error } = await supabase
+    .from("savings_goals")
+    .delete()
+    .eq("id", goalId);
+  if (error) throw error;
+}
+
+// ─── Bill Splits ──────────────────────────────────────────────────────────────
+
+export type BillSplitParticipant = {
+  id: string;
+  split_id: string;
+  name: string;
+  share_amount: number;
+  is_paid: boolean;
+};
+
+export type BillSplit = {
+  id: string;
+  user_id: string;
+  title: string;
+  total_amount: number;
+  created_at: string;
+  bill_split_participants: BillSplitParticipant[];
+};
+
+export async function createBillSplit(
+  userId: string,
+  title: string,
+  totalAmount: number,
+  participants: Array<{ name: string; share_amount: number }>,
+) {
+  const { data: split, error: splitError } = await supabase
+    .from("bill_splits")
+    .insert({ user_id: userId, title, total_amount: totalAmount })
+    .select()
+    .single();
+  if (splitError) throw splitError;
+
+  const { error: partError } = await supabase
+    .from("bill_split_participants")
+    .insert(
+      participants.map((p) => ({
+        split_id: split.id,
+        name: p.name,
+        share_amount: p.share_amount,
+        is_paid: false,
+      })),
+    );
+  if (partError) throw partError;
+  return split;
+}
+
+export async function getBillSplits(userId: string): Promise<BillSplit[]> {
+  const { data, error } = await supabase
+    .from("bill_splits")
+    .select("*, bill_split_participants(*)")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(10);
+  if (error) throw error;
+  return (data as BillSplit[]) || [];
+}
+
+export async function toggleParticipantPaid(participantId: string, isPaid: boolean) {
+  const { error } = await supabase
+    .from("bill_split_participants")
+    .update({ is_paid: isPaid })
+    .eq("id", participantId);
+  if (error) throw error;
+}
+
+export async function deleteBillSplit(splitId: string) {
+  const { error } = await supabase
+    .from("bill_splits")
+    .delete()
+    .eq("id", splitId);
+  if (error) throw error;
+}
+
 // Get all alerts for user (categories exceeding 80% threshold)
 export async function getUserBudgetAlerts(
   userId: string,

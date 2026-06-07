@@ -169,7 +169,7 @@ function AuthPageContent() {
               alt="TenPhel"
               width={150}
               height={150}
-              style={{ objectFit: "contain", width: "auto" }}
+              style={{ objectFit: "contain", width: "auto", height: "auto" }}
             />
           </div>
           <h1
